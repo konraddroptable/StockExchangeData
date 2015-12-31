@@ -185,47 +185,83 @@ namespace StockExchangeData
         private List<List<string>> downloadPage(string url, DateTime stockdate, string stock_type)
         {
             List<List<string>> list = new List<List<string>>();
+            bool connectionProblem = false;
+            int iterations = 1;
 
-            HtmlAgilityPack.HtmlWeb web = new HtmlWeb();
-            HtmlAgilityPack.HtmlDocument doc = web.Load(url + stock_type + "&date=" + stockdate.ToString("yyyy-MM-dd"));
-
-            try
+            do
             {
-                for (int i = 1; i <= 11; i++)
+                connectionProblem = false;
+
+                try
                 {
-                    List<string> sublist = new List<string>();
-                    foreach (HtmlNode item in doc.DocumentNode.SelectNodes(".//td[" + i + "]"))
+                    HtmlAgilityPack.HtmlWeb web = new HtmlWeb();
+                    HtmlAgilityPack.HtmlDocument doc = web.Load(url + stock_type + "&date=" + stockdate.ToString("yyyy-MM-dd"));
+
+                    for (int i = 1; i <= 11; i++)
                     {
-                        if (item != null)
+                        List<string> sublist = new List<string>();
+                        foreach (HtmlNode item in doc.DocumentNode.SelectNodes(".//td[" + i + "]"))
                         {
-                            //uzycie wyrażeń regularnych pozwala na pominięcie spacji przy &nbsp;
-                            sublist.Add(Regex.Replace(item.InnerText, @"<[^>]+>|&nbsp;", "").Trim());
+                            if (item != null)
+                            {
+                                //uzycie wyrażeń regularnych pozwala na pominięcie spacji przy &nbsp;
+                                sublist.Add(Regex.Replace(item.InnerText, @"<[^>]+>|&nbsp;", "").Trim());
+                            }
                         }
+
+                        list.Add(sublist);
                     }
-                    
-                    list.Add(sublist);
-                    
                 }
-            }
-            catch (NullReferenceException) 
-            {
-                //stock_data = stock_data.AddDays(1);
-                //downloadPage(url, stock_data);
-            }
+                catch (NullReferenceException)
+                {
+                    //stock_data = stock_data.AddDays(1);
+                    //downloadPage(url, stock_data);
+                }
+                catch (Exception ex)
+                {
+                    iterations++;
+                    connectionProblem = true;
+
+                    if (iterations >= 15)
+                    {
+                        MessageBox.Show("Zanotowano wyjątek!\n\n" + ex.Message.ToString());
+                        break;
+                    }
+                }
+            } while (connectionProblem);
+            
             return list;
         }
         private string getDate(string url, DateTime stockdate, string stock_type)
         {
             string output = string.Empty;
+            bool connectionProblem = false;
+            int iterations = 1;
 
-            HtmlAgilityPack.HtmlWeb web = new HtmlWeb();
-            HtmlAgilityPack.HtmlDocument doc = web.Load(url + stock_type + "&date=" + stockdate.ToString("yyyy-MM-dd"));
-
-            try
+            do
             {
-                output = doc.DocumentNode.SelectSingleNode("/html[1]/body[1]/div[1]/div[2]/div[1]").InnerText;
-            }
-            catch (NullReferenceException) { }
+                connectionProblem = false;
+
+                try
+                {
+                    HtmlAgilityPack.HtmlWeb web = new HtmlWeb();
+                    HtmlAgilityPack.HtmlDocument doc = web.Load(url + stock_type + "&date=" + stockdate.ToString("yyyy-MM-dd"));
+                    output = doc.DocumentNode.SelectSingleNode("/html[1]/body[1]/div[1]/div[2]/div[1]").InnerText;
+                }
+                catch (NullReferenceException) { }
+                catch (Exception ex)
+                {
+                    iterations++;
+                    connectionProblem = true;
+
+                    if (iterations >= 15)
+                    {
+                        MessageBox.Show("Zanotowano wyjątek!\n\n" + ex.Message.ToString());
+                        break;
+                    }
+                }
+            } while (connectionProblem);
+
             return output;
         }
 
